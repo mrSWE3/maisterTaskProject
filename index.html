@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+    <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+
+    <style>
+    #project-box {
+    display: grid;
+    grid-template-columns: auto auto auto auto;
+    grid-gap: 10px;
+    background-color: #2196F3;
+    padding: 10px;
+    }
+
+    #project-box > div {
+    background-color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    padding: 20px 0;
+    font-size: 30px;
+    }
+    </style>
+    <py-env>
+    - unsync
+    - paths:
+        - API/projectBuilder.py
+        - API/Project.py
+        - API/Section.py
+        - API/Task.py
+        - API/Irequest.py
+    </py-env>
+</head>
+
+<body>
+    
+    <div id="cleaner" style="display: block;">fel</div>
+    <div id = "a">Type an sample input here</div>
+    <input type="text" id="name-input" />
+    <input type="text" id="token-input" />
+    <button id="submit-button" type="submit" pys-onClick="test22">EEE</button>
+    <div id="test-output"></div>
+     <div id="test-output2"></div>
+    
+    <div id="project-box"></div>
+
+
+   
+   
+    <py-script>
+        from projectBuilder import ProjectBuilder
+        from Project import Project
+        from Irequest import *
+        from pyodide.http import pyfetch
+        import asyncio
+        from json import loads as loadJson
+        from js import XMLHttpRequest
+        import time
+        from unsync import unsync
+        
+
+        class PydineRequest(Irequest):
+            def __init__(self) -> None:
+                pass
+
+            @unsync
+            async def get(self,url : str, headers: dict) -> str:
+                response = await pyfetch(url=url, method="GET",headers=headers)
+                output = await response.string()
+                document.getElementById("test-output2").innerHTML = output
+                return output
+
+            
+
+                
+        async def test(*args, **kwargs):
+            headers = {'Authorization': 'Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"}
+            response = await pyfetch(url="https://www.meistertask.com/api/projects", method="GET",headers=headers)
+            output = await response.string()
+            
+            document.getElementById("test-output").innerHTML = output
+        
+        def test1(*args, **kwargs):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(test())
+
+        async def test2(*args, **kwargs):
+            headers = {'Authorization': 'Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"}
+            url="https://www.meistertask.com/api/projects"
+            
+            loop = asyncio.get_running_loop()
+            result = await PydineRequest().asyncGet(url=url,headers=headers)
+            document.getElementById("test-output").innerHTML = result
+
+        def test22(*args, **kwargs):
+            headers = {'Authorization': 'Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"}
+            url="https://www.meistertask.com/api/projects"
+            result = PydineRequest().get(url=url,headers=headers).result()
+            document.getElementById("test-output").innerHTML = result
+
+        def test3(*args, **kwargs):
+            headers = {'Authorization': 'Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"}
+            url="https://www.meistertask.com/api/projects"
+            req = XMLHttpRequest.new()
+            req.open("GET", url, False)
+            req.setRequestHeader('Authorization','Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM")
+            req.send(None)
+            output = str(req.response)
+            document.getElementById("test-output").innerHTML = output
+        
+        """
+        def test4(*args, **kwargs):
+            result = ""
+            fetch('https://jsonplaceholder.typicode.com/posts', {method: "GET", body: JSON.stringify(_data),headers: {"Content-type": "application/json; charset=UTF-8"}}).then(response => response.json()).then(json => {result = json})
+            document.getElementById("test-output").innerHTML = result
+        """
+        def test5(*args, **kwargs):
+            headers = {'Authorization': 'Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"}
+            url="https://www.meistertask.com/api/projects"
+            pr = PydineRequest("cleaner")
+            result = pr.get(url, headers)
+            document.getElementById("test-output").innerHTML = result
+        
+    
+        def refresh(*args, **kwargs):
+            
+            name = Element('name-input').element.value
+            token = Element('token-input').element.value
+            name = "Programmering"
+            token  = "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"
+            pb = ProjectBuilder(token=token, projectName=name, requestMaker = PydineRequest())
+            project = pb.build1()
+            #show(name,token,"project-box",project)
+            document.getElementById("test-output").innerHTML = project.dictionary
+        
+        def show(name : str,token : str ,project_box_id : str,project : Project):
+            project_box = document.getElementById("project-box")
+            project_box.innerHTML = ""
+
+            sections = project.sections
+            for s in sections:
+                section_div = project_box.appendChild(document.createElement('div'))
+                tasks = s.tasks
+                for t in tasks:
+                    task_div = document.createElement('div')
+                    task_div.innerHTML = t.name
+                    section_div.appendChild(task)
+    </py-script>
+
+</body>
+
+</html>

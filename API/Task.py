@@ -1,9 +1,10 @@
 #import CheckList
 class Label:
-    def __init__(self,name: str = "", hexColor: str = "000000"):
+    def __init__(self, name: str = "", hexColor: str = "000000"):
         self.name = name
         self.hexColor = hexColor
-    def getColor(self)->str:
+
+    def getColor(self) -> str:
         return "method not implemented"
 
 
@@ -23,7 +24,8 @@ class Task:
         self.notes = notes
         self.status = status
         self.dictionary = dictionary
-    def nameOfStatus(self,)->str:
+
+    def nameOfStatus(self) -> str:
         if(self.status == 1):
             return "open"
         elif (self.status == 8):
@@ -36,7 +38,7 @@ class Task:
             return ""
 
 
-def statusOfName(name: str)->int:
+def statusOfName(name: str) -> int:
     if(name == "open"):
         return 1
     elif (name == "trashed"):

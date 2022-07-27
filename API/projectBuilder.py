@@ -3,16 +3,18 @@ import datetime
 from Task import Task, Label, statusOfName
 from Section import Section
 from Irequest import Irequest
+import asyncio
 
 
-# TODO: only get acive info
 class ProjectBuilder:
-    def __init__(self, token: str, projectName: str, requestMaker: Irequest):
+    async def create(token: str, projectName: str, requestMaker: Irequest):
+        self = ProjectBuilder()
         self.lastRequests = datetime.datetime.now()
+
         self.token = token
         self.projectName = projectName
         self.requestMaker = requestMaker
-        respons = self.makeRequest("https://www.meistertask.com/api/projects")
+        respons = await self.makeRequest("https://www.meistertask.com/api/projects")
         projectJson = {}
         found = False
         for i in respons:
@@ -24,8 +26,9 @@ class ProjectBuilder:
             print("Can't find project")
         self.projectId = projectJson["id"]
         self.projectJson = projectJson
+        return self
 
-    def makeRequest(self, api_url: str):
+    async def makeRequest(self, api_url: str):
         # print("now")
         header = {'Authorization': 'Bearer ' + self.token}
         now = datetime.datetime.now()
@@ -34,48 +37,49 @@ class ProjectBuilder:
         while(diff < 0.52):
             now = datetime.datetime.now()
             diff = (now - self.lastRequests).total_seconds()
-        response = self.requestMaker.get(api_url, header)
+        response = await self.requestMaker.get(api_url, header)
         self.lastRequests = datetime.datetime.now()
         return response
 
-    def getSectionsFromProject(self) -> dict:
-        return list(reversed(self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/sections")))
+    async def getSectionsFromProject(self) -> dict:
+        return list((await self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/sections")))
 
-    def getTasksFromSection(self, sectionId: int):
-        return self.makeRequest("https://www.meistertask.com/api/sections/" + str(sectionId) + "/tasks")
+    async def getTasksFromSection(self, sectionId: int):
+        return await self.makeRequest("https://www.meistertask.com/api/sections/" + str(sectionId) + "/tasks")
 
-    def getTasksFromProject(self):
-        return self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/tasks")
+    async def getTasksFromProject(self):
+        return await self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/tasks")
 
-    def getLabelFromtask(self, taskId: int):
-        labelsJson = self.makeRequest(
+    async def getLabelFromtask(self, taskId: int):
+        labelsJson = await self.makeRequest(
             "https://www.meistertask.com/api/tasks/" + str(taskId) + "/labels")
         labels = []
         for l in labelsJson:
             labels.append(l["name"])
         return labels
 
-    def getUserFromid(self, userId):
+    async def getUserFromid(self, userId):
         if(userId == None):
             return "None"
-        return self.makeRequest("https://www.meistertask.com/api/persons/" + str(userId))["firstname"]
+        return await self.makeRequest("https://www.meistertask.com/api/persons/" + str(userId))["firstname"]
 
-    def getUsersFromProject(self):
-        return self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/persons")
+    async def getUsersFromProject(self):
+        return await self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/persons")
 
-    def getLabels(self):
-        return self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/labels")
+    async def getLabels(self):
+        return await self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/labels")
 
-    def build1(self) -> Project:
-        sectionsJson = self.getSectionsFromProject()
-        usersJson = self.getUsersFromProject()
-        tasksJson = self.getTasksFromProject()
-        self.addLabels(tasksJson=tasksJson)
+    async def getInfoAsync(self):
+        sectionsJson = await self.getSectionsFromProject()
+        usersJson = await self.getUsersFromProject()
+        tasksJson = await self.getTasksFromProject()
+        # await self.addLabels(tasksJson=tasksJson)
+        return sectionsJson, tasksJson, usersJson
+
+    def build1(self, sectionsJson, tasksJson, usersJson) -> Project:
         groupedTasks = groupDictsByKey(ds=tasksJson, key="section_id")
-
         self.addSectionsWithNoTasks(
             sectionsJson=sectionsJson, groupedTasks=groupedTasks)
-
         sectionsJson = sortDicts(sectionsJson, "sequence")
         sections = []
         for s in sectionsJson:
@@ -88,7 +92,7 @@ class ProjectBuilder:
                 else:
                     assignedTo = assignedTo["firstname"]
                 labels = []
-                for l in t["labels"]:
+                for l in t.get("labels", []):
                     labels.append(Label(name=l["name"], hexColor=l["color"]))
                 tasks.append(Task(dictionary=t,
                                   name=t["name"],
@@ -100,13 +104,13 @@ class ProjectBuilder:
 
         return Project(dictionary=self.projectJson, name=self.projectName, sections=sections)
 
-    def addLabels(self, tasksJson):
+    async def addLabels(self, tasksJson):
         for t in tasksJson:
             t.update({"labels": []})
-        labelsJson = self.getLabels()
+        labelsJson = await self.getLabels()
         for l in labelsJson:
 
-            ltasks = self.makeRequest(
+            ltasks = await self.makeRequest(
                 "http://www.meistertask.com/api/tasks?labels=" + str(l["id"])+"/")
             for tl in ltasks:
                 for t in tasksJson:

@@ -8,22 +8,29 @@
 
     <style>
     #project-box {
+    grid-auto-flow: column;
     display: grid;
-    grid-template-columns: auto auto auto auto;
     grid-gap: 10px;
     background-color: #2196F3;
-    padding: 10px;
+    justify-content: space-between;
+    }
+    #section-box{
+        width: repeat(1000, 1fr);
     }
 
-    #project-box > div {
+
+    #project-box > div{
+        
+    }
+
+    #project-box > div > div{
+    font-size: 1em;
     background-color: rgba(255, 255, 255, 0.8);
     text-align: center;
-    padding: 20px 0;
-    font-size: 30px;
+    padding: 10px 0;
     }
     </style>
     <py-env>
-    - unsync
     - paths:
         - API/projectBuilder.py
         - API/Project.py
@@ -39,7 +46,7 @@
     <div id = "a">Type an sample input here</div>
     <input type="text" id="name-input" />
     <input type="text" id="token-input" />
-    <button id="submit-button" type="submit" pys-onClick="test22">EEE</button>
+    <button id="submit-button" type="submit" pys-onClick="refresh">EEE</button>
     <div id="test-output"></div>
      <div id="test-output2"></div>
     
@@ -48,6 +55,48 @@
 
    
    
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <py-script>
         from projectBuilder import ProjectBuilder
         from Project import Project
@@ -57,21 +106,48 @@
         from json import loads as loadJson
         from js import XMLHttpRequest
         import time
-        from unsync import unsync
+        import Task
+
         
 
         class PydineRequest(Irequest):
             def __init__(self) -> None:
                 pass
 
-            @unsync
             async def get(self,url : str, headers: dict) -> str:
-                response = await pyfetch(url=url, method="GET",headers=headers)
+                response = await pyfetch(url=url, method="GET",headers=headers,mode="cors")
                 output = await response.string()
-                document.getElementById("test-output2").innerHTML = output
-                return output
+                #document.getElementById("test-output2").innerHTML = output
+                return loadJson(output)
 
+        async def refresh(*args, **kwargs):
             
+            name = Element('name-input').element.value
+            token = Element('token-input').element.value
+            name = "Programmering"
+            token  = "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"
+            pb = await ProjectBuilder.create(token=token, projectName=name, requestMaker = PydineRequest())
+            a,b,c = await pb.getInfoAsync()
+            project = pb.build1(a,b,c)
+            show(name,token,"project-box", "section-box",project)
+            #document.getElementById("test-output").innerHTML = project.dictionary
+        
+        def show(name : str,token : str ,project_box_id : str, section_box_id: str ,project : Project):
+            project_box = document.getElementById("project-box")
+            project_box.innerHTML = ""
+            part = 1/len(project.sections)
+            #document.getElementById("section-box").style.width = "300px"
+            sections = project.sections
+            for s in sections:
+                section_div = project_box.appendChild(document.createElement('div'))
+                section_div.id = section_box_id
+                section_div.innerHTML = s.name
+                tasks = s.tasks
+                for t in tasks:
+                    if t.nameOfStatus() == "open":
+                        task_div = document.createElement('div')
+                        task_div.innerHTML = t.name + " " 
+                        section_div.appendChild(task_div)
 
                 
         async def test(*args, **kwargs):
@@ -124,29 +200,9 @@
             document.getElementById("test-output").innerHTML = result
         
     
-        def refresh(*args, **kwargs):
-            
-            name = Element('name-input').element.value
-            token = Element('token-input').element.value
-            name = "Programmering"
-            token  = "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"
-            pb = ProjectBuilder(token=token, projectName=name, requestMaker = PydineRequest())
-            project = pb.build1()
-            #show(name,token,"project-box",project)
-            document.getElementById("test-output").innerHTML = project.dictionary
         
-        def show(name : str,token : str ,project_box_id : str,project : Project):
-            project_box = document.getElementById("project-box")
-            project_box.innerHTML = ""
+        
 
-            sections = project.sections
-            for s in sections:
-                section_div = project_box.appendChild(document.createElement('div'))
-                tasks = s.tasks
-                for t in tasks:
-                    task_div = document.createElement('div')
-                    task_div.innerHTML = t.name
-                    section_div.appendChild(task)
     </py-script>
 
 </body>

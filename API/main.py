@@ -1,36 +1,35 @@
-from cgitb import reset
+
+import requests
 from projectBuilder import ProjectBuilder
 from ConsoleView import show
 import asyncio
 import nest_asyncio
+import Irequest
 
 
-def program(token, name):
+class PydineRequest:
+    def __init__(self) -> None:
+        pass
 
-    pb = ProjectBuilder(token=token, projectName=name)
+    async def get(self, url: str, headers: dict) -> str:
+        response = requests.request(
+            url=url, headers=headers, method="GET").json()
+        return response
+
+
+async def program(token, name):
+    pb = await ProjectBuilder.create(token=token, projectName=name, requestMaker=PydineRequest())
 
     while True:
-        project = pb.build1()
+        a, b, c = await pb.getInfoAsync()
+        project = pb.build1(a, b, c)
         show(p=project)
         for i in range(3):
             print("----------")
 
 
-async def async1():
-    await asyncio.sleep(1)
-    print(sync())
-
-
-def sync():
-    result = asyncio.run(async2())
-    result += ", was the return value"
-    return result
-
-
-async def async2():
-    await asyncio.sleep(1)
-    return "return value"
-
 if __name__ == '__main__':
-    nest_asyncio.apply()
-    asyncio.run(async1())
+    name = "Programmering"
+    token = "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"
+
+    asyncio.run(program(token=token, name=name))

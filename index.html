@@ -2,33 +2,48 @@
 
 <html>
 
-<head>
+<head id = "body">
     <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
     <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
 
     <style>
+    * {
+    margin: 0;
+    padding: 0;
+    }   
+    #body{}
     #project-box {
+    justify-content: space-around;
     grid-auto-flow: column;
     display: grid;
     grid-gap: 10px;
     background-color: #2196F3;
-    justify-content: space-between;
+    padding-left: 0px;
     }
-    #section-box{
-        width: repeat(1000, 1fr);
-    }
-
-
-    #project-box > div{
+    .section-box{
         
     }
 
-    #project-box > div > div{
+    .section-header{
+        font-size: 1.2em;
+        align: center;
+    }
+
+
+    .task-box{
+    border.
     font-size: 1em;
     background-color: rgba(255, 255, 255, 0.8);
     text-align: center;
-    padding: 10px 0;
+    margin: 10px 0;
     }
+
+    #message{}
+    #name-input{}
+    #token-input{}
+    #button{}
+
+
     </style>
     <py-env>
     - paths:
@@ -41,14 +56,10 @@
 </head>
 
 <body>
-    
-    <div id="cleaner" style="display: block;">fel</div>
-    <div id = "a">Type an sample input here</div>
+    <div id = "message">Type an sample input here</div>
     <input type="text" id="name-input" />
     <input type="text" id="token-input" />
-    <button id="submit-button" type="submit" pys-onClick="refresh">EEE</button>
-    <div id="test-output"></div>
-     <div id="test-output2"></div>
+    <button id="button" type="submit" pys-onClick="refresh">OK</button>
     
     <div id="project-box"></div>
 
@@ -57,10 +68,6 @@
    
 
 
-    
-    
-    
-    
     
     
     
@@ -121,33 +128,56 @@
                 return loadJson(output)
 
         async def refresh(*args, **kwargs):
-            
+            deletList = []
+            deletList.append(document.getElementById("message"))
+            deletList.append(document.getElementById("name-input"))
+            deletList.append(document.getElementById("token-input"))
+            deletList.append(document.getElementById("button"))
+            #body = document.getElementById("body")
+            for d in deletList:
+                d.style.display = "none"
+
             name = Element('name-input').element.value
             token = Element('token-input').element.value
             name = "Programmering"
             token  = "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"
-            pb = await ProjectBuilder.create(token=token, projectName=name, requestMaker = PydineRequest())
-            a,b,c = await pb.getInfoAsync()
-            project = pb.build1(a,b,c)
-            show(name,token,"project-box", "section-box",project)
+
+
+            while True:
+                pb = await ProjectBuilder.create(token=token, projectName=name, requestMaker = PydineRequest())
+                a,b,c = await pb.getInfoAsync()
+                project = pb.build1(a,b,c)
+                show(name,token,"project-box", "section-box","section-header","task-box",project)
             #document.getElementById("test-output").innerHTML = project.dictionary
         
-        def show(name : str,token : str ,project_box_id : str, section_box_id: str ,project : Project):
+        def show(name : str,token : str ,project_box_id : str, section_box_id: str, section_header_id , task_box_id: str, project : Project):
             project_box = document.getElementById("project-box")
             project_box.innerHTML = ""
-            part = 1/len(project.sections)
-            #document.getElementById("section-box").style.width = "300px"
             sections = project.sections
+            part = 1/(len(project.sections)+1) * project_box.clientWidth
             for s in sections:
-                section_div = project_box.appendChild(document.createElement('div'))
-                section_div.id = section_box_id
-                section_div.innerHTML = s.name
+                section_div = document.createElement('section')
+                section_div.style.width = str(part)+"px"
+                project_box.appendChild(section_div)
+                section_div.classList.add(section_box_id)
+                sHeader = document.createElement('h1')
+                sHeader.innerHTML = s.name
+                sHeader.classList.add(section_header_id)
+                section_div.appendChild(sHeader)
+                
                 tasks = s.tasks
                 for t in tasks:
                     if t.nameOfStatus() == "open":
-                        task_div = document.createElement('div')
-                        task_div.innerHTML = t.name + " " 
+                        task_div = document.createElement('p')
+                        task_div.classList.add(task_box_id)
+                        task_div.innerHTML = t.name 
                         section_div.appendChild(task_div)
+            """   
+            section_divs = document.getElementsByClassName("section-box")
+            part = 1/len(project.sections)
+            for s_div in section_divs:
+                s_div.style.width = str(50)+"%"
+            """
 
                 
         async def test(*args, **kwargs):

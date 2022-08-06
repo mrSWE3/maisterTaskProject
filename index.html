@@ -171,7 +171,7 @@
                 project = await pb.build(projectIdentifierValue = id,projectIdentifier= "id")
 
                 show(token,project,"project-box", "section-box","section-header","task-box")
-                break
+                #break
             #document.getElementById("test-output").innerHTML = project.dictionary
         
         def show(token : str, project : Project, project_box_id : str, section_box_id: str, section_header_id , task_box_id: str, max_task_namn_len: str = 20):

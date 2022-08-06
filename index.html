@@ -22,7 +22,9 @@
         padding-top: 10px;
         text-align: center;
     }
-    #name-input, #token-input{
+
+
+    #name-input, #token-input, #projectSelect{
         border-style: solid;
         border-width: 2px;
         border-color: black;
@@ -31,13 +33,19 @@
         margin-top: 15px;
         
     }
-    #button {
+    #tokenButton, #nameButton{
         width: 14%;
         margin-left: 43%;
         margin-top: 10px;
         background-color: orange;
         border-radius: 10px;
     }
+    #projectSelect,#nameButton{
+        display: none;
+    }
+
+
+
 
     #project-box {
     justify-content: space-around;
@@ -82,29 +90,18 @@
 
 <body id = "body">
     <div id = "input"> 
-        <div id = "message">Fyll i namn pa projectet och token</div>
-        <input type="text" id="name-input" placeholder="Namn"/>
-        <form>
-        <select id="mySelect" size="1">
-            <option>Apple</option>
-            <option>Orange</option>
-            <option>Pineapple</option>
-            <option>Banana</option>
+        <div id = "message">Fyll i token</div>
+        <input type="text" id="token-input" placeholder="Token"/>
+        <select id="projectSelect" size="1">
         </select>
-        </form>
-        <button id="button" type="submit" pys-onClick="refresh">OK</button>
+        <button id="tokenButton" type="submit" pys-onClick="loadProjectSelector">OK</button>
+        <button id="nameButton" type="submit" pys-onClick="refresh">OK</button>
     </div>
 
     <div id="project-box"></div>
 
 
-   
-   
-
-
-    
-    
-    <py-script>
+   <py-script>
         from projectBuilder import ProjectBuilder
         from Project import Project
         from Irequest import *
@@ -114,10 +111,6 @@
         from js import XMLHttpRequest
         import time
         import Task
-
-        def loadSelection():
-            document.createElement('option')
-
         
 
         class PydineRequest(Irequest):
@@ -130,33 +123,58 @@
                 #document.getElementById("test-output2").innerHTML = output
                 return loadJson(output)
 
-        async def refresh(*args, **kwargs):
+        
+        async def loadProjectSelector(*args, **kwargs):
+            document.getElementById("message").innerHTML = "Valj project"       
+
+            projectSelector = document.getElementById("projectSelect")
+            projectSelector.style.display = "initial"
+            document.getElementById("nameButton").style.display = "initial"
+            
             deletList = []
             deletList.append(document.getElementById("message"))
-            deletList.append(document.getElementById("name-input"))
             deletList.append(document.getElementById("token-input"))
-            deletList.append(document.getElementById("button"))
+            deletList.append(document.getElementById("tokenButton"))
             for d in deletList:
                 d.style.display = "none"
+
+            token = Element('token-input').element.value
+            
+            pb = await ProjectBuilder.create(token=token, requestMaker = PydineRequest())
+
+            projects = await pb.getProjects()
+
+            for p in projects:
+                o = document.createElement('option')
+                o.innerHTML = p["name"]
+                projectSelector.appendChild(o)
+            
+
+        async def refresh(*args, **kwargs):
+            token = Element('token-input').element.value
+            pb = await ProjectBuilder.create(token=token, requestMaker = PydineRequest())
 
             body = document.body
             p = document.getElementById("project-box")
             body.style.backgroundColor = p.style.backgroundColor
 
-            name = Element('name-input').element.value
-            token = Element('token-input').element.value
+            projectSelector = document.getElementById("projectSelect")
+            projectSelector.style.display = "none"
+            document.getElementById("nameButton").style.display = "none"
+            index = projectSelector.options.selectedIndex
+
+            id = (await pb.getProjects())[index]["id"]
             
 
-
             while True:
-                pb = await ProjectBuilder.create(token=token, projectName=name, requestMaker = PydineRequest())
-                a,b,c = await pb.getInfoAsync()
-                project = pb.build1(a,b,c)
-                show(name,token,"project-box", "section-box","section-header","task-box",project)
+
+                project = await pb.build(projectIdentifierValue = id,projectIdentifier= "id")
+
+                show(token,project,"project-box", "section-box","section-header","task-box")
                 break
             #document.getElementById("test-output").innerHTML = project.dictionary
         
-        def show(name : str,token : str ,project_box_id : str, section_box_id: str, section_header_id , task_box_id: str, project : Project, max_task_namn_len: str = 20):
+        def show(token : str, project : Project, project_box_id : str, section_box_id: str, section_header_id , task_box_id: str, max_task_namn_len: str = 20):
             project_box = document.getElementById("project-box")
             project_box.innerHTML = ""
             sections = project.sections

@@ -79,7 +79,7 @@ class ProjectBuilder:
     async def getLabels(self, projectId: int):
         return await self.makeRequest("https://www.meistertask.com/api/projects/" + str(projectId) + "/labels")
 
-    async def getInfoAsync(self, projectIdentifier, projectIdentifierValue, onlyActiveSections: bool = True, onlyActiveTask: bool = True):
+    async def getInfoAsync(self, projectIdentifierValue, projectIdentifier, onlyActiveSections: bool, onlyActiveTask: bool):
         projectJson = await self.getProjectWithIdentifier(projectIdentifier, projectIdentifierValue)
         projectId = projectJson["id"]
         sectionsJson = await self.getSectionsFromProject(projectId)
@@ -123,6 +123,10 @@ class ProjectBuilder:
             sections.append(Section(dictionary=s, name=s["name"], tasks=tasks))
 
         return Project(dictionary=projectJson, name=projectJson["name"], sections=sections)
+
+    async def build(self, projectIdentifierValue, projectIdentifier="id", onlyActiveSections: bool = True, onlyActiveTask: bool = True):
+        p, s, t, u = await self.getInfoAsync(projectIdentifierValue, projectIdentifier, onlyActiveSections, onlyActiveTask)
+        return self.build1(p, s, t, u)
 
     async def addLabels(self, tasksJson):
         for t in tasksJson:

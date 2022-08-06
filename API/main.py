@@ -29,7 +29,6 @@ async def program(token, name):
 
 
 if __name__ == '__main__':
-    name = "Programmering"
-    token = "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"
-
+    name = input("Name")
+    token = input("token")
     asyncio.run(program(token=token, name=name))

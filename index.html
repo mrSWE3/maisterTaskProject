@@ -11,7 +11,34 @@
     margin: 0;
     padding: 0;
     }   
-    #body{}
+    #body{
+        background-color:rgb(191, 191, 191);;
+    }
+    #input{
+        width: 50%;
+        margin-left: 25%;
+    }
+    #message{
+        padding-top: 10px;
+        text-align: center;
+    }
+    #name-input, #token-input{
+        border-style: solid;
+        border-width: 2px;
+        border-color: black;
+        width: 100%;
+        padding-left: 3px;
+        margin-top: 15px;
+        
+    }
+    #button {
+        width: 14%;
+        margin-left: 43%;
+        margin-top: 10px;
+        background-color: orange;
+        border-radius: 10px;
+    }
+
     #project-box {
     justify-content: space-around;
     grid-auto-flow: column;
@@ -36,12 +63,10 @@
     background-color: rgba(255, 255, 255, 0.8);
     text-align: center;
     margin: 10px 0;
+    border-radius: 10px;
     }
 
-    #message{}
-    #name-input{}
-    #token-input{}
-    #button{}
+
 
 
     </style>
@@ -55,12 +80,14 @@
     </py-env>
 </head>
 
-<body>
-    <div id = "message">Type an sample input here</div>
-    <input type="text" id="name-input" />
-    <input type="text" id="token-input" />
-    <button id="button" type="submit" pys-onClick="refresh">OK</button>
-    
+<body id = "body">
+    <div id = "input"> 
+        <div id = "message">Fyll i namn pa projectet och token</div>
+        <input type="text" id="name-input" placeholder="Namn"/>
+        <input type="text" id="token-input"  placeholder="Token"/>
+        <button id="button" type="submit" pys-onClick="refresh">OK</button>
+    </div>
+
     <div id="project-box"></div>
 
 
@@ -68,40 +95,6 @@
    
 
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     
     <py-script>
@@ -133,24 +126,26 @@
             deletList.append(document.getElementById("name-input"))
             deletList.append(document.getElementById("token-input"))
             deletList.append(document.getElementById("button"))
-            #body = document.getElementById("body")
             for d in deletList:
                 d.style.display = "none"
 
+            body = document.body
+            p = document.getElementById("project-box")
+            body.style.backgroundColor = p.style.backgroundColor
+
             name = Element('name-input').element.value
             token = Element('token-input').element.value
-            name = "Programmering"
-            token  = "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"
+            
 
 
-            while True:
-                pb = await ProjectBuilder.create(token=token, projectName=name, requestMaker = PydineRequest())
-                a,b,c = await pb.getInfoAsync()
-                project = pb.build1(a,b,c)
-                show(name,token,"project-box", "section-box","section-header","task-box",project)
+            #while True:
+            pb = await ProjectBuilder.create(token=token, projectName=name, requestMaker = PydineRequest())
+            a,b,c = await pb.getInfoAsync()
+            project = pb.build1(a,b,c)
+            show(name,token,"project-box", "section-box","section-header","task-box",project)
             #document.getElementById("test-output").innerHTML = project.dictionary
         
-        def show(name : str,token : str ,project_box_id : str, section_box_id: str, section_header_id , task_box_id: str, project : Project):
+        def show(name : str,token : str ,project_box_id : str, section_box_id: str, section_header_id , task_box_id: str, project : Project, max_task_namn_len: str = 20):
             project_box = document.getElementById("project-box")
             project_box.innerHTML = ""
             sections = project.sections
@@ -170,7 +165,15 @@
                     if t.nameOfStatus() == "open":
                         task_div = document.createElement('p')
                         task_div.classList.add(task_box_id)
-                        task_div.innerHTML = t.name 
+
+                        labels = ""
+                        for l in t.labels:
+                            labels += l.name
+
+                        if len(t.name)>max_task_namn_len:
+                            task_div.innerHTML = t.name[0:max_task_namn_len] + labels +  "..."
+                        else:
+                            task_div.innerHTML = t.name + " " + labels
                         section_div.appendChild(task_div)
             """   
             section_divs = document.getElementsByClassName("section-box")
@@ -181,7 +184,7 @@
 
                 
         async def test(*args, **kwargs):
-            headers = {'Authorization': 'Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"}
+            headers = {'Authorization': 'Bearer ' }
             response = await pyfetch(url="https://www.meistertask.com/api/projects", method="GET",headers=headers)
             output = await response.string()
             
@@ -193,7 +196,7 @@
             result = loop.run_until_complete(test())
 
         async def test2(*args, **kwargs):
-            headers = {'Authorization': 'Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"}
+            headers = {'Authorization': 'Bearer ' }
             url="https://www.meistertask.com/api/projects"
             
             loop = asyncio.get_running_loop()
@@ -201,17 +204,17 @@
             document.getElementById("test-output").innerHTML = result
 
         def test22(*args, **kwargs):
-            headers = {'Authorization': 'Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"}
+            headers = {'Authorization': 'Bearer ' }
             url="https://www.meistertask.com/api/projects"
             result = PydineRequest().get(url=url,headers=headers).result()
             document.getElementById("test-output").innerHTML = result
 
         def test3(*args, **kwargs):
-            headers = {'Authorization': 'Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"}
+            headers = {'Authorization': 'Bearer ' }
             url="https://www.meistertask.com/api/projects"
             req = XMLHttpRequest.new()
             req.open("GET", url, False)
-            req.setRequestHeader('Authorization','Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM")
+            req.setRequestHeader('Authorization','Bearer ')
             req.send(None)
             output = str(req.response)
             document.getElementById("test-output").innerHTML = output
@@ -223,7 +226,7 @@
             document.getElementById("test-output").innerHTML = result
         """
         def test5(*args, **kwargs):
-            headers = {'Authorization': 'Bearer ' + "EAt5sK7OxUh_pZWB2khILpK0KY1C7O_46XnddjmoYQM"}
+            headers = {'Authorization': 'Bearer ' }
             url="https://www.meistertask.com/api/projects"
             pr = PydineRequest("cleaner")
             result = pr.get(url, headers)

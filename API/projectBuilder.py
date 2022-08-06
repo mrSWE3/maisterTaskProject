@@ -1,3 +1,4 @@
+from re import S
 from Project import Project
 import datetime
 from Task import Task, Label, statusOfName
@@ -52,11 +53,21 @@ class ProjectBuilder:
 
     async def getLabelFromtask(self, taskId: int):
         labelsJson = await self.makeRequest(
-            "https://www.meistertask.com/api/tasks/" + str(taskId) + "/labels")
+            "https://www.meistertask.com/api/tasks/" + str(taskId) + "/task_labels")
         labels = []
         for l in labelsJson:
             labels.append(l["name"])
         return labels
+
+    async def addLabelsForEachTask(self, tasks, projectLabels):
+        for i in range(len(tasks)):
+            taskLabels = (await self.getLabelFromtask(tasks[i]))
+            tasks[i]["labels"] = []
+            for l in taskLabels:
+                id = l["label_id"]
+                labelDict = {"name": projectLabels[id]["name"],
+                             "color": projectLabels[id]["color"]}
+                tasks[i]["labels"].append(labelDict)
 
     async def getUserFromid(self, userId):
         if(userId == None):
@@ -73,7 +84,8 @@ class ProjectBuilder:
         sectionsJson = await self.getSectionsFromProject()
         usersJson = await self.getUsersFromProject()
         tasksJson = await self.getTasksFromProject()
-        # await self.addLabels(tasksJson=tasksJson)
+        projectLabelsJson = await self.getLabels()
+        await self.addLabelsForEachTask(tasks=tasksJson, projectLabels=projectLabelsJson)
         return sectionsJson, tasksJson, usersJson
 
     def build1(self, sectionsJson, tasksJson, usersJson) -> Project:

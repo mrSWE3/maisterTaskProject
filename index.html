@@ -84,7 +84,14 @@
     <div id = "input"> 
         <div id = "message">Fyll i namn pa projectet och token</div>
         <input type="text" id="name-input" placeholder="Namn"/>
-        <input type="text" id="token-input"  placeholder="Token"/>
+        <form>
+        <select id="mySelect" size="1">
+            <option>Apple</option>
+            <option>Orange</option>
+            <option>Pineapple</option>
+            <option>Banana</option>
+        </select>
+        </form>
         <button id="button" type="submit" pys-onClick="refresh">OK</button>
     </div>
 
@@ -107,6 +114,9 @@
         from js import XMLHttpRequest
         import time
         import Task
+
+        def loadSelection():
+            document.createElement('option')
 
         
 
@@ -138,11 +148,12 @@
             
 
 
-            #while True:
-            pb = await ProjectBuilder.create(token=token, projectName=name, requestMaker = PydineRequest())
-            a,b,c = await pb.getInfoAsync()
-            project = pb.build1(a,b,c)
-            show(name,token,"project-box", "section-box","section-header","task-box",project)
+            while True:
+                pb = await ProjectBuilder.create(token=token, projectName=name, requestMaker = PydineRequest())
+                a,b,c = await pb.getInfoAsync()
+                project = pb.build1(a,b,c)
+                show(name,token,"project-box", "section-box","section-header","task-box",project)
+                break
             #document.getElementById("test-output").innerHTML = project.dictionary
         
         def show(name : str,token : str ,project_box_id : str, section_box_id: str, section_header_id , task_box_id: str, project : Project, max_task_namn_len: str = 20):

@@ -1,4 +1,5 @@
 from re import S
+from xmlrpc.client import boolean
 from Project import Project
 import datetime
 from Task import Task, Label, statusOfName
@@ -8,25 +9,11 @@ import asyncio
 
 
 class ProjectBuilder:
-    async def create(token: str, projectName: str, requestMaker: Irequest):
+    async def create(token: str, requestMaker: Irequest):
         self = ProjectBuilder()
         self.lastRequests = datetime.datetime.now()
-
         self.token = token
-        self.projectName = projectName
         self.requestMaker = requestMaker
-        respons = await self.makeRequest("https://www.meistertask.com/api/projects")
-        projectJson = {}
-        found = False
-        for i in respons:
-            if (i["name"] == projectName):
-                projectJson = i
-                found = True
-                break
-        if (not found):
-            print("Can't find project")
-        self.projectId = projectJson["id"]
-        self.projectJson = projectJson
         return self
 
     async def makeRequest(self, api_url: str):
@@ -42,26 +29,38 @@ class ProjectBuilder:
         self.lastRequests = datetime.datetime.now()
         return response
 
-    async def getSectionsFromProject(self) -> dict:
-        return list((await self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/sections")))
+    async def getProjects(self):
+        respons = await self.makeRequest("https://www.meistertask.com/api/projects")
+        return respons
+
+    async def getProjectWithIdentifier(self, identifier, identifierValue):
+        respons = await self.getProjects()
+        projectJson = {}
+        found = False
+        for i in respons:
+            if (i[identifier] == identifierValue):
+                projectJson = i
+                found = True
+                break
+        return projectJson
+
+    async def getSectionsFromProject(self, projectId: int) -> dict:
+        return list((await self.makeRequest("https://www.meistertask.com/api/projects/" + str(projectId) + "/sections")))
 
     async def getTasksFromSection(self, sectionId: int):
         return await self.makeRequest("https://www.meistertask.com/api/sections/" + str(sectionId) + "/tasks")
 
-    async def getTasksFromProject(self):
-        return await self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/tasks")
+    async def getTasksFromProject(self, projectId: int):
+        return await self.makeRequest("https://www.meistertask.com/api/projects/" + str(projectId) + "/tasks")
 
     async def getLabelFromtask(self, taskId: int):
         labelsJson = await self.makeRequest(
             "https://www.meistertask.com/api/tasks/" + str(taskId) + "/task_labels")
-        labels = []
-        for l in labelsJson:
-            labels.append(l["name"])
-        return labels
+        return labelsJson
 
     async def addLabelsForEachTask(self, tasks, projectLabels):
         for i in range(len(tasks)):
-            taskLabels = (await self.getLabelFromtask(tasks[i]))
+            taskLabels = (await self.getLabelFromtask(tasks[i]["id"]))
             tasks[i]["labels"] = []
             for l in taskLabels:
                 id = l["label_id"]
@@ -74,21 +73,30 @@ class ProjectBuilder:
             return "None"
         return await self.makeRequest("https://www.meistertask.com/api/persons/" + str(userId))["firstname"]
 
-    async def getUsersFromProject(self):
-        return await self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/persons")
+    async def getUsersFromProject(self, projectId: int):
+        return await self.makeRequest("https://www.meistertask.com/api/projects/" + str(projectId) + "/persons")
 
-    async def getLabels(self):
-        return await self.makeRequest("https://www.meistertask.com/api/projects/" + str(self.projectId) + "/labels")
+    async def getLabels(self, projectId: int):
+        return await self.makeRequest("https://www.meistertask.com/api/projects/" + str(projectId) + "/labels")
 
-    async def getInfoAsync(self):
-        sectionsJson = await self.getSectionsFromProject()
-        usersJson = await self.getUsersFromProject()
-        tasksJson = await self.getTasksFromProject()
-        projectLabelsJson = await self.getLabels()
-        await self.addLabelsForEachTask(tasks=tasksJson, projectLabels=projectLabelsJson)
-        return sectionsJson, tasksJson, usersJson
+    async def getInfoAsync(self, projectIdentifier, projectIdentifierValue, onlyActiveSections: bool = True, onlyActiveTask: bool = True):
+        projectJson = await self.getProjectWithIdentifier(projectIdentifier, projectIdentifierValue)
+        projectId = projectJson["id"]
+        sectionsJson = await self.getSectionsFromProject(projectId)
+        if(onlyActiveSections):
+            sectionsJson = keepDictsWithValueOnKey(
+                sectionsJson, "status", 1)
 
-    def build1(self, sectionsJson, tasksJson, usersJson) -> Project:
+        usersJson = await self.getUsersFromProject(projectId)
+        tasksJson = await self.getTasksFromProject(projectId)
+        if(onlyActiveTask):
+            tasksJson = keepDictsWithValueOnKey(tasksJson, "status", 1)
+
+        projectLabelsJson = await self.getLabels(projectId)
+        await self.addLabelsForEachTask(tasks=tasksJson, projectLabels=listDictToDict(ds=projectLabelsJson, key="id"))
+        return (projectJson, sectionsJson, tasksJson, usersJson)
+
+    def build1(self, projectJson, sectionsJson, tasksJson, usersJson) -> Project:
         groupedTasks = groupDictsByKey(ds=tasksJson, key="section_id")
         self.addSectionsWithNoTasks(
             sectionsJson=sectionsJson, groupedTasks=groupedTasks)
@@ -114,7 +122,7 @@ class ProjectBuilder:
                                   status=t["status"]))
             sections.append(Section(dictionary=s, name=s["name"], tasks=tasks))
 
-        return Project(dictionary=self.projectJson, name=self.projectName, sections=sections)
+        return Project(dictionary=projectJson, name=projectJson["name"], sections=sections)
 
     async def addLabels(self, tasksJson):
         for t in tasksJson:
@@ -141,13 +149,20 @@ class ProjectBuilder:
                 groupedTasks.update({s["id"]: []})
 
 
-def groupDictsByKey(ds: list[dict], key: str):
+def groupDictsByKey(ds: list[dict], key) -> dict:
     out = {}
     for d in ds:
         out.update({d[key]: []})
     for d in ds:
         out[d[key]].append(d)
     return out
+
+
+def listDictToDict(ds: list[dict], key) -> dict:
+    d = groupDictsByKey(ds, key)
+    for key in d.keys():
+        d[key] = d[key][0]
+    return d
 
 
 def filterDicts(ds: list[dict], key, value) -> list[dict]:
@@ -163,6 +178,14 @@ def findDict(ds: list[dict], key, value) -> dict:
         if(d[key] == value):
             return d
     return {}
+
+
+def keepDictsWithValueOnKey(ds: list[dict], key, value) -> list[dict]:
+    out = []
+    for d in ds:
+        if d[key] == value:
+            out.append(d)
+    return out
 
 
 def sortDicts(ds: list[dict], key) -> list[dict]:

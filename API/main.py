@@ -18,11 +18,11 @@ class PydineRequest:
 
 
 async def program(token, name):
-    pb = await ProjectBuilder.create(token=token, projectName=name, requestMaker=PydineRequest())
+    pb = await ProjectBuilder.create(token=token, requestMaker=PydineRequest())
 
     while True:
-        a, b, c = await pb.getInfoAsync()
-        project = pb.build1(a, b, c)
+        p, s, t, u = await pb.getInfoAsync("name", name)
+        project = pb.build1(p, s, t, u)
         show(p=project)
         for i in range(3):
             print("----------")
